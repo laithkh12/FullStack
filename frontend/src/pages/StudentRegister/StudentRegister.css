@@ -1,0 +1,24 @@
+.student-page {
+    position: relative;
+    height: 100vh; /* Optional: Adjust based on your page height */
+  }
+  
+  .student-page button {
+    position: absolute;
+    top: -90px; /* Adjust the value as needed */
+    right: 10px; /* Adjust the value as needed */
+    background: transparent;
+    font-size: 16px;
+    color: black;
+    border: 1px solid tomato;
+    padding: 10px 30px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+
+  
+  .student-page button:hover {
+    background-color: chartreuse;
+  }
+  
