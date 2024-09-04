@@ -1,0 +1,116 @@
+.add-class {
+    position: relative;
+    padding: 20px;
+  }
+  
+  .add-class .back-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    font-size: 16px;
+    color: black;
+    border: 1px solid tomato;
+    padding: 10px 30px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  .add-class .back-button:hover {
+    background-color: chartreuse;
+  }
+  
+  .add-course-inputs {
+    width: max(40%, 280px);
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+  }
+  
+  .add-course-inputs input,
+  .add-course-inputs textarea {
+    margin-bottom: 10px;
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .add-course-inputs .add-task-btn,
+  .add-course-inputs .save-class-btn {
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 10px;
+  }
+  
+  .add-course-inputs .save-class-btn {
+    background-color: green;
+  }
+  
+  .add-course-inputs .add-task-btn:hover,
+  .add-course-inputs .save-class-btn:hover {
+    opacity: 0.8;
+  }
+  
+  .tasks-list {
+    margin-top: 20px;
+  }
+  
+  .tasks-list ul {
+    list-style: none;
+    padding: 0;
+  }
+  
+  .tasks-list li {
+    background: #f4f4f4;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+  }
+  
+  .task-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+  }
+  
+  .task-popup h2 {
+    margin-top: 0;
+  }
+  
+  .task-popup input {
+    display: block;
+    margin-bottom: 10px;
+    padding: 10px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .task-popup button {
+    margin-top: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+  }
+  
+  .task-popup .close-btn {
+    background-color: red;
+    color: white;
+  }
+  
+  .task-popup .add-btn {
+    background-color: green;
+    color: white;
+  }
+  
