@@ -1,0 +1,44 @@
+.grades .back-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: transparent;
+    font-size: 16px;
+    color: black;
+    border: 1px solid tomato;
+    padding: 10px 30px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  .grades .back-button:hover {
+    background-color: chartreuse;
+  }
+  /* Add border and styling to the table */
+table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  
+  /* Add border and styling to table header cells */
+  th {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+  }
+  
+  /* Add border and styling to table body cells */
+  td {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+  }
+  
+  /* Add border and styling to table footer cells */
+  tfoot td {
+    border: 1px solid #dddddd;
+    text-align: left;
+    padding: 8px;
+  }
+  
