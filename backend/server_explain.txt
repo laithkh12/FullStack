@@ -1,0 +1,451 @@
+1.Basic Middleware setup:
+    (slat) -> rounds for bcrypt hashing
+    (express.json) -> Middleware for parsing JSON bodies
+    (cors) -> Middleware for enabling CORS with specific origins and methods
+    (cookieParser) -> Middleware for parsing cookies
+
+2.Database connection setup:
+    Establishes a connection to the MySQL database with the specified credentials.
+
+3.File upload setup:
+    Configures multer for handling file uploads with a specific storage strategy.
+    (multer.diskStorage) -> configure storage settings for uploaded files.
+    (destination) -> determines the directory where the uploaded files will be stored.
+        (req) -> The request object
+        (file) -> The file being uploaded
+        (cb) -> callback function to be called once the destination path is determined
+        (cb(null, 'uploads/')) -> calls callback function with null (for the error) ad store all the file sin the directory
+    (filename) -> This setting determines the name of the uploaded file.
+        (file.originalname) -> nsures that each file has a unique name 
+    
+4.User regisrtation: 
+    Registers a new user (student or teacher) after verifying that the email is not already registered.
+    Requset :
+        * Method : POST
+        * PATH : /register
+    Parameters :
+        * fname (string): First name of the user.
+        * lname (string): Last name of the user.
+        * email (string): Email address of the user.
+        * phone (string): Phone number of the user.
+        * password (string): Plain-text password of the user.
+        * role (string): Role of the user (Student or Teacher).
+    Response :
+        * Body: { "Message": "<role> registered successfully!" }
+        * Description: Indicates successful registration of the user with the specified role.
+    Error Responses :
+        * 400 Bad Request:
+            * Body: { "Error": "Email already registered" }
+            * Description: Returned when the provided email address is already registered in the system.
+        * 500 Internal Server Error:
+            * Body: { "Error": "Database error" } or { "Error": "Database insertion failed" }
+            * Description: Returned when there's an issue with the database connection, query execution, or insertion process.
+    Password Hashing : 
+        * Uses bcrypt.hash() to securely hash the provided password before storing it in the database.
+    Email Validation :
+        * Executes a SQL query to check if the provided email address already exists in either the studentLogin or teacher table.
+    Database Operations:
+        * Uses db.query() to perform SQL queries against the database, handling both email checking and user data insertion.
+        * Logs errors and returns appropriate HTTP status codes and JSON responses based on the outcome of database operations.
+
+5.User login:
+    * Authenticates a user (student or teacher) by checking their email and password against the database.
+    * Request
+        * Method: GET
+        * Path: /login
+    * Query Parameters:
+        * email (string): Email address of the user.
+        * password (string): Plain-text password of the user.
+    * Response
+        * Success Response (200 OK):
+            * Body: { "success": true, "message": "Login successful", "role": "<Role>" }
+            * Description: Indicates successful login with the user's role (Teacher or Student).
+        * Error Response (401 Unauthorized):
+            * Body: { "success": false, "message": "Invalid email or password" }
+            * Description: Returned when either the email doesn't exist or the password provided doesn't match the stored hashed password.
+        * Error Response (500 Internal Server Error):
+            * Body: { "Error": "Database error" }
+            * Description: Returned when there's an issue with the database connection or query execution.
+    * Handling Teacher Login:
+        * Executes a SQL query (getTeacherPasswordQuery) to retrieve the hashed password from the teacher table for the provided email.
+        * Compares the hashed password with the provided password using bcrypt.compare() asynchronously.
+        * If the passwords match, returns a success response indicating a successful login as a Teacher.
+    * Handling Student Login:
+        * If the email is not found in the teacher table or if the password doesn't match, executes another SQL query (getPasswordQuery) to retrieve the hashed password from the studentLogin table.
+        * Compares the hashed password with the provided password using bcrypt.compare() asynchronously.
+        * If the passwords match, returns a success response indicating a successful login as a Student.
+    * Error Handling:
+        * Logs database errors if queries fail and returns appropriate HTTP status codes (500 for database errors, 401 for authentication failures due to incorrect email or password).
+    * Edge Cases:
+        * Logs a message if the provided email is not found in either the teacher or studentLogin tables and returns a 401 error response indicating invalid credentials.
+
+6.Create a Class:
+    Creates a new class and optionally adds tasks associated with it.
+    * Request
+        * Method: POST
+        * Path: /api/classes
+    * Request Body:
+        * cname (string): Name of the class.
+        * id (string or number): ID of the class.
+        * description (string): Description of the class.
+        * tasks (array of objects, optional): Array containing tasks associated with the class.
+        * taskName (string): Name of the task.
+        * percentage (number): Percentage or weightage of the task.
+        * teacher_email (string): Email of the teacher associated with the class.
+    * Response
+        * Success Response (200 OK):
+            * Body: { "Message": "Class and tasks saved successfully!" }
+            * Description: Indicates successful creation and optional task insertion for the class.
+        * Error Response (500 Internal Server Error):
+            * Body: { "Error": "Database error" }
+            * Description: Returned when there's an issue with database connection or query execution.
+    * Inserting Class Details:
+        * Constructs an INSERT query (insertClassQuery) to insert class details (cname, id, description, teacher_email) into the classes table.
+        * Executes the query using db.query().
+        * Handles errors during insertion and returns a 500 status with a JSON response if an error occurs.
+    * Handling Tasks (Optional):
+        * Checks if tasks array exists and has elements (tasks && tasks.length > 0).
+        * Constructs an INSERT query (insertTasksQuery) to insert tasks (task_name, percentage) associated with the newly inserted class (class_id) into the tasks table.
+        * Maps tasks array into a format (tasksData) suitable for batch insertion.
+        * Executes the tasks insertion query using db.query().
+        * Handles errors during tasks insertion and returns a 500 status with a JSON response if an error occurs.
+    * Response Handling:
+        * If tasks are successfully inserted, returns a success message indicating both class and tasks were saved.
+        * If no tasks were provided or inserted, returns a message indicating the class was saved without tasks.
+
+7.Fetch All Classes:
+    Fetches and returns all classes from the database.
+    * Request
+        * Method: GET
+        * Path: /api/classes
+    * Response
+        * Success Response (200 OK):
+            * Body: JSON array containing objects with class Details
+            * Description: Returns an array of class objects containing id, cname, cid, description, and teacher_email.
+        * Error Response (500 Internal Server Error):
+            * Body: { "error": "Internal Server Error" }
+            * Description: Returned when there's an issue with database connection or query execution.
+    * Query Execution:
+        * Executes a SQL SELECT query to retrieve all classes from the classes table (SELECT id, cname, cid, description, teacher_email FROM classes).
+        * Uses db.query() to perform the database query asynchronously.
+    * Promise Handling:
+        * Wraps the database query inside a Promise to await its completion using await new Promise((resolve, reject) => { ... }).
+        * Resolves with the query result (result) if successful, or rejects with an error (err) if there's an issue.
+    * Data Formatting:
+        * Maps the database query result (result) to format each row into an object containing specific class details (id, cname, cid, description, teacher_email).
+    * Sending Response:
+        * Sends the formatted classData as a JSON response using res.json(classData).
+    * Error Handling:
+        * Catches any errors that occur during the database query (db.query) or promise execution.
+        * Logs detailed error messages to the console for debugging purposes.
+        * Returns a 500 status with a JSON response indicating an internal server error ({ "error": "Internal Server Error" }).
+
+8.Fetch Tasks for a Specific Class:
+    Fetches and returns tasks for a specified class ID.
+    * Request
+        * Method: GET
+        * Path: /api/classes
+    * Response
+        * Success Response (200 OK):
+            * Body: JSON array containing objects with class details
+            * Description: Returns an array of class objects containing id, cname, cid, description, and teacher_email.
+        * Error Response (500 Internal Server Error):
+            * Body: { "error": "Internal Server Error" }
+            * Description: Returned when there's an issue with database connection or query execution.
+    * Query Execution:
+        * Executes a SQL SELECT query to retrieve all classes from the classes table (SELECT id, cname, cid, description, teacher_email FROM classes).
+        * Uses db.query() to perform the database query asynchronously.
+    * Promise Handling:
+        * Wraps the database query inside a Promise to await its completion using await new Promise((resolve, reject) => { ... }).
+        * Resolves with the query result (result) if successful, or rejects with an error (err) if there's an issue.
+    * Data Formatting:
+        * Maps the database query result (result) to format each row into an object containing specific class details (id, cname, cid, description, teacher_email).
+    * Sending Response:
+        * Sends the formatted classData as a JSON response using res.json(classData).
+    * Error Handling:
+        * Catches any errors that occur during the database query (db.query) or promise execution.
+        * Logs detailed error messages to the console for debugging purposes.
+        * Returns a 500 status with a JSON response indicating an internal server error ({ "error": "Internal Server Error" }).
+
+9.Add a Student:
+    Adds a new student with grades and associates them with a specific class.
+    * Request
+        * Method: POST
+        * Path: /api/students
+    * Request Body:
+        * firstName (string): First name of the student.
+        * lastName (string): Last name of the student.
+        * email (string): Email address of the student.
+        * age (number): Age of the student.
+        * classId (number): ID of the class to which the student belongs.
+        * grades (object): Object containing grades or performance metrics of the student.
+    * Response
+        * Success Response (200 OK):
+            * Body: { "message": "Student added successfully" }
+            * Description: Indicates successful addition of the student to the database.
+        * Error Response (400 Bad Request):
+            * Body: { "error": "Invalid classId" }
+            * Description: Returned when classId is missing or invalid (e.g., null, undefined, 0).
+        * Error Response (500 Internal Server Error):
+            * Body: { "error": "Internal Server Error" }
+            * Description: Returned when there's an issue with database connection or query execution.
+    * Data Validation:
+        * Destructures firstName, lastName, email, age, classId, and grades from req.body.
+        * Logs received data for debugging purposes.
+    * Class ID Validation:
+        * Checks if classId is present and not equal to 0. If not, returns a 400 error indicating an invalid classId.
+    * Grades Serialization:
+        * Converts the grades object into a JSON string (gradesJson) before inserting into the database. This assumes grades is an object with key-value pairs representing different types of grades or metrics.
+    * Database Insertion:
+        * Constructs an INSERT query (insertStudentQuery) to insert student details (firstName, lastName, email, age, classId, gradesJson) into the students table.
+        * Uses db.query() to execute the query asynchronously within a Promise.
+    * Handling Success and Errors:
+        * Resolves the promise (resolve(result)) upon successful insertion.
+        * Logs detailed database errors (err.message and err.stack) and rejects the promise (reject(err)) if an error occurs during database interaction.
+        * Sends appropriate HTTP responses (200 for success, 400 for client errors, 500 for server errors) based on the outcome of database operations.
+    * Error Handling:
+        * Catches any unhandled errors during the process, logs them for debugging purposes (console.error), and sends a generic 500 error response ({ "error": "Internal Server Error" }).
+
+10.Fetch Classes by Teacher Email:
+    Fetches and returns classes taught by a specific teacher, identified by their email.
+    * Request
+        * Method: GET
+        * Path: /api/classes/:email
+    * URL Parameter:
+        * email (string): Email address of the teacher whose classes are to be fetched.
+    * Response
+        * Success Response (200 OK):
+            * Body: JSON array containing objects with class details
+            * Description: Returns an array of class objects containing id, cname, cid, description, and teacher_email for classes associated with the specified teacher's email.
+        * Error Response (500 Internal Server Error):
+            * Body: { "error": "Internal Server Error" }
+            * Description: Returned when there's an issue with database connection or query execution.
+    * Email Parameter Extraction:
+        * Retrieves the email parameter from the request URL (req.params.email), which represents the teacher's email.
+    * Database Query:
+        * Executes a SQL SELECT query to fetch classes (id, cname, cid, description, teacher_email) from the classes table where teacher_email matches the provided email.
+    * Promise Handling:
+        * Wraps the database query inside a Promise to await its completion using await new Promise((resolve, reject) => { ... }).
+        * Resolves with the query result (result) if successful, or rejects with an error (err) if there's an issue.
+    * Data Formatting:
+        * Maps the database query result (result) to format each row into an object containing specific class details (id, cname, cid, description, teacher_email).
+    * Sending Response:
+        * Sends the formatted classData as a JSON response using res.json(classData).
+    * Error Handling:
+        * Catches any errors that occur during the database query (db.query) or promise execution.
+        * Logs detailed error messages to the console for debugging purposes.
+        * Returns a 500 status with a JSON response indicating an internal server error ({ "error": "Internal Server Error" }).
+
+11.Fetch Students by Class ID:
+    Fetches and returns students associated with a specified class ID.
+    * Request
+        * Method: GET
+        * Path: /api/students/:classId
+    * URL Parameter:
+        * classId (number): ID of the class for which students are to be fetched.
+    * Response
+        * Success Response (200 OK):
+            * Body: JSON array containing objects with student details
+            * Description: Returns an array of student objects containing id, firstName, lastName, email, age, classId, and grades for students associated with the specified class ID.
+        * Error Response (500 Internal Server Error):
+            * Body: { "error": "Internal Server Error" }
+            * Description: Returned when there's an issue with database connection or query execution.
+    * Class ID Parameter Extraction:
+        * Retrieves the classId parameter from the request URL (req.params.classId), which represents the ID of the class.
+    * Database Query:
+        * Executes a SQL SELECT query to fetch all columns (*) from the students table where classId matches the provided classId.
+    * Promise Handling:
+        * Wraps the database query inside a Promise to await its completion using await new Promise((resolve, reject) => { ... }).
+        * Resolves with the query result (result) if successful, or rejects with an error (err) if there's an issue.
+    * Sending Response:
+        * Sends the fetched students data as a JSON response using res.json(students)
+    * Error Handling: 
+        * Catches any errors that occur during the database query (db.query) or promise execution.
+        * Logs detailed error messages to the console for debugging purposes.
+        * Returns a 500 status with a JSON response indicating an internal server error ({ "error": "Internal Server Error" }).
+
+12.Save Attendance:
+    Saves attendance records for students. If a record already exists for a specific date, it updates the status.
+    * Request
+        * Method: POST
+        * Path: /api/saveAttendance
+    * Request Body:
+        * attendanceRecords (array of objects): Array containing attendance records to be saved. Each object typically includes:
+        * class_id (number): ID of the class for which attendance is recorded.
+        * student_id (number): ID of the student whose attendance is recorded.
+        * status (string or boolean): Attendance status (e.g., 'present', 'absent', true, false).
+        * date (string): Date of the attendance record.
+    * Response
+        * Success Response (200 OK):
+            * Body: { "message": "Attendance saved successfully" }
+            * Description: Indicates successful saving of attendance records into the database.
+        * Error Response (500 Internal Server Error):
+            * Body: { "error": "Failed to save attendance" }
+            * Description: Returned when there's an issue with database connection, query execution, or any other unexpected error.
+    * Attendance Records Extraction:
+        * Retrieves attendanceRecords array from the request body (req.body), which contains attendance records to be saved.
+    * Insert Query with ON DUPLICATE KEY UPDATE:
+        * Defines insertAttendanceQuery using an INSERT INTO ... VALUES ? ON DUPLICATE KEY UPDATE statement. This MySQL syntax allows inserting new records and updating existing ones based on duplicate keys (in this case, class_id, student_id, and date).
+    * Filtering Existing Records:
+        * Iterates through attendanceRecords to check for existing records in the database (existingRecord). It uses a SELECT query to verify if a record already exists for a specific class_id, student_id, and date.
+    * Inserting Non-Duplicate Records:
+        * Constructs filteredRecords array with records that do not already exist in the database.
+        * If filteredRecords contains new records (filteredRecords.length > 0), executes the insertAttendanceQuery to insert these records into the attendance table.
+    * Sending Response:
+        * Sends a 200 status response with { "message": "Attendance saved successfully" } when attendance records are successfully inserted.
+    * Error Handling:
+        * Catches any errors that occur during database queries (db.query) or promise execution.
+        * Logs detailed error messages (console.error) for debugging purposes.
+        * Sends a 500 status response with { "error": "Failed to save attendance" } to indicate an internal server error if an exception occurs.
+
+13.Save Homework:
+    Saves homework for a class, including an optional file upload.
+    * Request
+        * Method: POST
+        * Path: /api/saveHomework
+    * Request Body:
+        * title (string): Title of the homework.
+        * description (string): Description or instructions for the homework.
+        * submissionDate (string): Date by which the homework is due.
+        * classId (number): ID of the class for which the homework is assigned.
+    * File Upload
+        * File: Uploaded using upload.single('file').
+            * The uploaded file is available as req.file.
+            * filePath is set to req.file.path if a file is uploaded, or null otherwise.
+    * Response
+        * Success Response (200 OK):
+            * Body: { "message": "Homework saved successfully" }
+            * Description: Indicates successful saving of homework details into the database.
+        * Error Response (500 Internal Server Error):
+            * Body: { "error": "Failed to save homework" }
+            * Description: Returned when there's an issue with database connection, query execution, file upload, or any other unexpected error.
+    * Request Body Extraction:
+        * Retrieves title, description, submissionDate, and classId from the request body (req.body).
+    * File Upload Handling:
+        * Uses upload.single('file') middleware to handle file upload.
+        * Sets filePath to req.file.path if a file is uploaded, or null if no file is uploaded.
+    * Database Insert Query:
+        * Defines insertHomeworkQuery to insert homework details (class_id, title, description, submission_date, file_path) into the homework table.
+    * Executing Database Query:
+        * Executes the database query using db.query.
+        * Passes parameters (classId, title, description, submissionDate, filePath) to the query.
+        * Handles errors (err) that may occur during query execution.
+    * Sending Response:
+        * Sends a 200 status response with { "message": "Homework saved successfully" } when homework details are successfully inserted into the database.
+    * Error Handling:
+        * Catches any errors that occur during database query execution (db.query).
+        * Logs detailed error messages (console.error) for debugging purposes.
+        * Sends a 500 status response with { "error": "Failed to save homework" } to indicate an internal server error if an exception occurs.
+
+14.Fetch Attendance for a Specific Student:
+    Fetches and returns attendance records for a specific student ID.
+    * Request
+        * Method: GET
+        * Path: /api/attendance/:studentId
+    * Parameters:
+        * studentId (number): ID of the student for whom attendance records are requested.
+    * Response
+        * Success Response (200 OK):
+            * Body: Array of objects representing attendance records. Each object typically includes:
+                * id (number): Attendance record ID.
+                * class_id (number): ID of the class associated with the attendance.
+                * student_id (number): ID of the student for whom attendance is recorded.
+                * status (string or boolean): Attendance status (e.g., 'present', 'absent', true, false).
+                * date (string): Date of the attendance record.
+        * Error Response (500 Internal Server Error):
+            * Body: { "error": "Internal Server Error" }
+            * Description: Returned when there's an issue with database connection, query execution, or any other unexpected error.
+    * Extracting Parameters:
+        * Retrieves studentId from the request parameters (req.params.studentId).
+    * Querying the Database:
+        * Executes a SQL query to retrieve attendance records (SELECT * FROM attendance WHERE student_id = ?).
+        * Uses db.query to interact with the database asynchronously.
+        * Passes studentId as a parameter to the query.
+    * Handling Query Results:
+        * Uses a promise (new Promise(...)) to handle the asynchronous nature of db.query.
+        * Resolves with results if the query is successful, containing attendance records.
+    * Sending Response:
+        * Sends a JSON response (res.json(attendanceRecords)) containing the fetched attendance records.
+        * Handles errors by catching exceptions (catch (error)) and sending a 500 status response with an appropriate error message.
+
+15.Update Student Grades:
+    Updates the grades for a specific student ID.
+    * Request
+        * Method: PUT
+        * Path: /api/students/:id
+    * Parameters:
+        * id (number): ID of the student whose grades are being updated.
+    * Request Body
+        * Body:
+            * grades (object): New grades data to update for the student.
+    * Response
+        * Success Response (200 OK):
+            * Body: { "message": "Grades updated successfully" }
+            * Description: Indicates successful update of student grades in the database.
+        * Error Response (500 Internal Server Error):
+            * Body: { "error": "Internal Server Error" }
+            * Description: Returned when there's an issue with database connection, query execution, or any other unexpected error.
+    * Extracting Parameters:
+        * Retrieves studentId from the request parameters (req.params.id).
+    * Extracting Request Body:
+        * Retrieves grades from the request body (req.body).
+        * Converts grades object to a JSON string (gradesJson) for storage in the database.
+    * Updating Database:
+        * Defines updateStudentQuery to update the grades field in the students table for the student with the specified id.
+    * Executing Database Update:
+        * Uses db.query to execute the update query asynchronously.
+        * Passes gradesJson and studentId as parameters to the query.
+    * Handling Success:
+        * Sends a 200 status response with { "message": "Grades updated successfully" } upon successful execution of the update query.
+    * Error Handling:
+        * Catches any errors that occur during database query execution (db.query).
+        * Logs detailed error messages (console.error) for debugging purposes.
+        * Sends a 500 status response with { "error": "Internal Server Error" } to indicate an internal server error if an exception occurs.
+
+
+Error Handling and Server Start:
+
+16.Handle Database Connection Errors
+    Database Connection Establishment:
+        db.connect is typically a method provided by database connection libraries (like mysql for MySQL databases in Node.js).
+        It establishes a connection to the MySQL database server.
+    Callback Function:
+        The function (err) => { ... } is a callback function provided to db.connect.
+        It handles the result of attempting to establish a connection.
+    Error Handling:
+        If err is truthy (indicating an error occurred during connection), it logs an error message using console.error.
+        The error message includes err.message, which provides details about the specific error encountered during connection.
+    Success Message:
+        If no error occurs (else block), it logs a success message using console.log.
+        This message confirms that the application successfully connected to the MySQL database.
+
+17.Handle Uncaught Exceptions
+    Event Listener Registration (process.on):
+        process.on('uncaughtException', ...) registers a handler for uncaughtException events in the Node.js process.
+        uncaughtException events are emitted when an unhandled JavaScript exception occurs in the Node.js application. These exceptions typically terminate the application if not caught and handled.
+    Error Handling (err parameter):
+        When an uncaughtException occurs, the provided callback function (err) => { ... } is invoked.
+        Inside the callback, err contains information about the uncaught exception, including its message (err.message).
+    Logging and Exiting the Process:
+        console.error("Uncaught exception:", err.message); logs an error message indicating the occurrence of the uncaught exception.
+        process.exit(1); forcefully terminates the Node.js process with an exit code of 1.
+        Using process.exit(1); is generally a last-resort measure to ensure that the application exits immediately after encountering an unhandled exception.
+    Purpose:
+        Preventing Unhandled Exceptions: By listening for uncaughtException events, the code aims to catch exceptions that would otherwise cause the Node.js process to terminate unexpectedly.
+        Logging and Debugging: Logging the exception message (err.message) helps in identifying the nature and cause of uncaught exceptions.
+        Graceful Termination: Calling process.exit(1); ensures that the process exits with a non-zero status code (1), indicating an abnormal termination due to an unhandled exception.
+
+18.Start the Server
+    Port Definition (PORT constant):
+        const PORT = 8081; defines a constant PORT with the value 8081.
+        This specifies the port number on which the server will listen for incoming HTTP requests.
+    Server Initialization (app.listen):
+        app.listen(PORT, ...) instructs the Express application (app) to start listening for connections on the specified port (PORT).
+        When the server starts successfully, it executes the callback function () => { ... }.
+    Callback Function:
+        Inside the callback function, console.log(Server is running on port ${PORT}); logs a message to indicate that the server has started successfully and is now listening on the specified port.
+        The backticks () are used for template literals to dynamically insert the PORT value into the log message.
+    Purpose:
+        Server Initialization: This snippet is essential for starting the Express server and making it available to handle incoming HTTP requests.
+        Port Specification: By defining PORT as 8081, the server will listen on port 8081 for incoming connections.
+        Feedback on Server Status: Logging a message to the console (Server is running on port ${PORT}) provides immediate feedback to developers that the server has started successfully.
