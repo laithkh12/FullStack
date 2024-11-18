@@ -21,9 +21,9 @@ app.use(cors({
 // 2
 // Create connection with MySQL
 const db = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "",
+    host: YOUR_HOST_NAME,
+    user: YOUR_USER_NAME,
+    password: YOUR_PASSWORD,
     database: 'fsproj'
 });
 
